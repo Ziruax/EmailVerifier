@@ -30,16 +30,21 @@ ROLE_BASED_PREFIXES = {
     "team", "office", "hello", "help", "service", "feedback"
 }
 
-# Session state initialization
+MAJOR_PROVIDERS = {
+    "gmail.com", "googlemail.com",
+    "outlook.com", "hotmail.com", "live.com", "msn.com",
+    "yahoo.com", "ymail.com", "rocketmail.com",
+    "aol.com", "icloud.com", "me.com"
+}
+
+# Session caches
 if "mx_cache" not in st.session_state:
     st.session_state.mx_cache = {}
-if "last_run" not in st.session_state:
-    st.session_state.last_run = None
 
 # =============================
 # HELPER FUNCTIONS
 # =============================
-@st.cache_data(ttl=3600)  # Cache MX for 1 hour
+@st.cache_data(ttl=7200)  # 2 hours
 def get_mx(domain):
     try:
         records = dns.resolver.resolve(domain, 'MX', lifetime=6)
@@ -56,7 +61,7 @@ def safe_smtp_connect(mx, retries=2):
             server.ehlo_or_helo_if_needed()
             return server
         except Exception:
-            time.sleep(1.2)
+            time.sleep(1.0 if attempt == 0 else 2.0)
     return None
 
 def smtp_check(server, email):
@@ -75,10 +80,10 @@ def is_catch_all(server, domain):
         code = smtp_check(server, fake)
         if code == 250:
             return True
-        time.sleep(0.4)
+        time.sleep(0.35)
     return False
 
-def score_and_classify(email, server=None):
+def score_and_classify(email):
     if not EMAIL_REGEX.match(email):
         return 0, "invalid", "bad_syntax"
 
@@ -86,10 +91,10 @@ def score_and_classify(email, server=None):
     score = 100
     reasons = set()
 
+    # Disposable & role-based penalties (applied always)
     if domain in DISPOSABLE_DOMAINS:
         score -= 45
         reasons.add("disposable")
-
     if local in ROLE_BASED_PREFIXES or local.startswith(("noreply", "no-reply")):
         score -= 25
         reasons.add("role_based")
@@ -98,53 +103,76 @@ def score_and_classify(email, server=None):
     if not mx:
         return 0, "invalid", "no_mx_record"
 
+    server = safe_smtp_connect(mx) if mx else None
+    is_major = domain in MAJOR_PROVIDERS
+
     if not server:
-        score -= 35
-        reasons.add("smtp_connect_failed")
+        score -= 30
+        reasons.add("smtp_connection_failed")
     else:
         code = smtp_check(server, email)
+
         if code == 250:
-            pass  # great
+            # Clean accept → good
+            pass
         elif code is None:
-            score -= 30
+            score -= 25 if is_major else 35
             reasons.add("smtp_timeout_or_error")
         elif code in [421, 450, 451]:
-            score -= 15
+            score -= 12 if is_major else 20
             reasons.add("soft_reject_greylisted")
         elif code in [550, 551, 553, 554]:
             score -= 60
             reasons.add("hard_reject")
         else:
-            score -= 25
-            reasons.add(f"smtp_code_{code}")
+            score -= 20 if is_major else 30
+            reasons.add(f"smtp_response_{code}")
+
+    # Special major provider adjustment (2026 reality)
+    if is_major:
+        # Forgive some connection / timeout issues
+        if "smtp_connection_failed" in reasons:
+            score += 15
+            reasons.discard("smtp_connection_failed")
+            reasons.add("major_provider_no_smtp_probe")
+        if "smtp_timeout_or_error" in reasons:
+            score += 12
+            reasons.discard("smtp_timeout_or_error")
+            reasons.add("major_provider_anti_probe")
+        # Cap unrealistic high scores (they almost never give clean 250 anymore)
+        if score > 92:
+            score = 92
 
     score = max(0, min(100, score))
 
-    if score >= 88:
-        status = "valid"
-    elif score >= 65:
-        status = "probably_valid"
-    elif score >= 40:
-        status = "risky"
+    # Status classification — more forgiving for major providers
+    if is_major:
+        if score >= 78:
+            status = "valid"
+        elif score >= 60:
+            status = "probably_valid"
+        elif score >= 40:
+            status = "risky"
+        else:
+            status = "invalid"
     else:
-        status = "invalid"
+        if score >= 88:
+            status = "valid"
+        elif score >= 65:
+            status = "probably_valid"
+        elif score >= 40:
+            status = "risky"
+        else:
+            status = "invalid"
 
     return score, status, ",".join(sorted(reasons)) or "ok"
 
 # =============================
-# MAIN VERIFICATION LOGIC
+# MAIN VERIFICATION
 # =============================
 def verify_emails(emails):
-    if not emails:
-        return pd.DataFrame(), "No valid emails found"
-
-    # Clean & deduplicate
-    cleaned = set()
-    for e in emails:
-        e = str(e).strip().lower()
-        if "@" in e and EMAIL_REGEX.match(e):
-            cleaned.add(e)
-    emails = sorted(list(cleaned))
+    cleaned = set(e.strip().lower() for e in emails if "@" in str(e))
+    emails = [e for e in cleaned if EMAIL_REGEX.match(e)]
     total = len(emails)
 
     if total == 0:
@@ -152,41 +180,35 @@ def verify_emails(emails):
 
     grouped = defaultdict(list)
     for email in emails:
-        domain = email.split("@")[1]
-        grouped[domain].append(email)
+        grouped[email.split("@")[1]].append(email)
 
     results = []
     progress = st.progress(0.0)
     status_text = st.empty()
-
     processed = 0
 
-    for domain, group_emails in grouped.items():
-        status_text.text(f"Processing {domain} ({len(group_emails)} emails)")
+    for domain, group in grouped.items():
+        status_text.text(f"Checking {domain} ({len(group)} emails)")
 
         mx = get_mx(domain)
         server = safe_smtp_connect(mx) if mx else None
+        catch_all = is_catch_all(server, domain) if server else False
 
-        catch_all = False
-        if server:
-            catch_all = is_catch_all(server, domain)
+        for email in group:
+            score, status, reason = score_and_classify(email)
 
-        for email in group_emails:
-            if catch_all:
-                score, status, reason = score_and_classify(email, None)
-                score = min(score, 58)
-                reason = reason + ",catch_all" if reason != "ok" else "catch_all"
-                if status == "valid":
-                    status = "probably_valid"
-            else:
-                score, status, reason = score_and_classify(email, server)
+            # Catch-all override (if detected)
+            if catch_all and status in ["valid", "probably_valid"]:
+                score = min(score, 65)
+                status = "risky"
+                if "catch_all" not in reason:
+                    reason += ",catch_all" if reason != "ok" else "catch_all"
 
             results.append({
                 "email": email,
                 "score": score,
                 "status": status,
-                "reason": reason,
-                "domain": email.split("@")[1]
+                "reason": reason
             })
 
             processed += 1
@@ -198,82 +220,74 @@ def verify_emails(emails):
             except:
                 pass
 
-        # Smart inter-domain delay (key to robustness)
-        time.sleep(0.8 + random.uniform(0, 0.8))  # 0.8–1.6s
+        # Inter-domain delay — helps a lot against blocks
+        time.sleep(0.9 + random.uniform(0, 0.9))  # 0.9 – 1.8 seconds
 
     progress.progress(1.0)
-    status_text.text("Verification finished!")
+    status_text.text("Verification completed")
 
     df = pd.DataFrame(results)
-
-    # Nice summary
     summary = df["status"].value_counts().to_dict()
     summary["total"] = len(df)
 
     return df, summary
 
 # =============================
-# STREAMLIT APP
+# STREAMLIT UI
 # =============================
-st.set_page_config(page_title="Email Verifier • Robust", layout="wide")
-st.title("📧 Email Verifier (Robust Edition)")
-st.caption(f"Last improved • {datetime.now().strftime('%Y-%m')} • Delay between domains only")
+st.set_page_config(page_title="Email Verifier 2026", layout="wide")
+st.title("📧 Email Verifier (March 2026 Edition)")
+st.caption("Better handling of Gmail / Outlook / Yahoo • Delay between domains only")
 
-tab1, tab2 = st.tabs(["Batch Verify", "Quick Check"])
+tab1, tab2 = st.tabs(["Batch", "Single"])
 
 with tab1:
-    uploaded = st.file_uploader("Upload CSV (must have 'email' column)", type=["csv"])
+    uploaded = st.file_uploader("Upload CSV with 'email' column", type="csv")
 
     if uploaded:
         try:
             df_in = pd.read_csv(uploaded)
-            if "email" not in df_in.columns:
-                st.error("File must contain an 'email' column")
-            else:
-                emails = df_in["email"].dropna().astype(str).tolist()
-                st.info(f"Found {len(emails)} email entries (will deduplicate)")
+            emails = df_in.get("email", pd.Series()).dropna().astype(str).tolist()
+            st.info(f"Loaded {len(emails)} emails (will remove duplicates)")
 
-                col1, col2 = st.columns([1, 4])
-                with col1:
-                    if st.button("Start Verification", type="primary", use_container_width=True):
-                        with st.spinner("Working... (this may take a few minutes for large lists)"):
-                            result_df, summary = verify_emails(emails)
+            if st.button("Start Verification", type="primary"):
+                with st.spinner("Verifying..."):
+                    result_df, summary = verify_emails(emails)
 
-                            if not result_df.empty:
-                                st.success("Done!")
-                                st.subheader("Summary")
-                                cols = st.columns(5)
-                                cols[0].metric("Total", summary.get("total", 0))
-                                cols[1].metric("Valid", summary.get("valid", 0), delta_color="normal")
-                                cols[2].metric("Probably", summary.get("probably_valid", 0))
-                                cols[3].metric("Risky", summary.get("risky", 0))
-                                cols[4].metric("Invalid", summary.get("invalid", 0))
+                    if not result_df.empty:
+                        st.success("Done!")
 
-                                st.subheader("Results")
-                                st.dataframe(
-                                    result_df[["email", "score", "status", "reason"]].sort_values("score", ascending=False),
-                                    use_container_width=True,
-                                    hide_index=True
-                                )
+                        cols = st.columns(5)
+                        cols[0].metric("Total", summary.get("total", 0))
+                        cols[1].metric("Valid", summary.get("valid", 0))
+                        cols[2].metric("Probably", summary.get("probably_valid", 0))
+                        cols[3].metric("Risky", summary.get("risky", 0))
+                        cols[4].metric("Invalid", summary.get("invalid", 0))
 
-                                csv = result_df.to_csv(index=False).encode('utf-8')
-                                st.download_button(
-                                    "Download Full CSV",
-                                    csv,
-                                    "email_verification_results.csv",
-                                    "text/csv",
-                                    key="download_full",
-                                    type="primary"
-                                )
+                        st.dataframe(
+                            result_df[["email", "score", "status", "reason"]]
+                            .sort_values("score", ascending=False),
+                            use_container_width=True,
+                            hide_index=True
+                        )
+
+                        csv = result_df.to_csv(index=False).encode('utf-8')
+                        st.download_button(
+                            "↓ Download full report",
+                            csv,
+                            "verification_results.csv",
+                            "text/csv",
+                            type="primary"
+                        )
         except Exception as e:
-            st.error(f"Error reading file: {str(e)}")
+            st.error(f"File reading error: {str(e)}")
 
 with tab2:
-    single = st.text_input("Single email check")
-    if single and st.button("Verify Now"):
+    single = st.text_input("Single email")
+    if single and st.button("Check"):
         score, status, reason = score_and_classify(single.strip().lower())
-        color = {"valid": "green", "probably_valid": "blue", "risky": "orange", "invalid": "red"}.get(status, "grey")
-        st.markdown(f"**{status.upper()}** – Score: **{score}/100**  \nReason: {reason}", unsafe_allow_html=True)
+        color_map = {"valid": "🟢", "probably_valid": "🔵", "risky": "🟠", "invalid": "🔴"}
+        icon = color_map.get(status, "⚪")
+        st.markdown(f"**{icon} {status.upper()}**  –  **{score}/100**  \nReason: {reason}")
 
-st.markdown("---")
-st.caption("• Small delay between domains only (helps avoid blocks)  \n• Retries on connect  \n• Catch-all detection  \n• Deduplication & better regex")
+st.caption("• Gmail/Outlook/Yahoo get special treatment (they block probes)  \n• Small delay between domains only  \n• Catch-all detection included")
