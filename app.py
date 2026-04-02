@@ -241,154 +241,296 @@ def verify_emails(emails):
 # =============================
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
-html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
+/* Global styles */
+* {
+    font-family: 'Inter', sans-serif !important;
 }
 
-h1 {
-    font-size: 2.5rem !important;
+/* Main header */
+.main-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.main-header h1 {
+    color: white !important;
+    font-size: 2.8rem !important;
     font-weight: 700 !important;
-    background: linear-gradient(90deg, #667eea, #764ba2);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    margin: 0 !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
+.main-header p {
+    color: rgba(255,255,255,0.9) !important;
+    font-size: 1.1rem !important;
+    margin-top: 0.5rem !important;
+}
+
+/* Feature cards */
+.feature-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border: 2px solid #e2e8f0;
+    height: 100%;
+}
+
+.feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.feature-title {
+    font-weight: 600;
+    color: #1a202c !important;
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
+}
+
+.feature-desc {
+    color: #4a5568 !important;
+    font-size: 0.9rem;
+}
+
+/* Tabs styling */
 .stTabs [data-baseweb="tab-list"] {
-    gap: 8px;
-    background: #f7fafc;
+    gap: 12px;
+    background: #edf2f7;
     padding: 0.5rem;
-    border-radius: 10px;
+    border-radius: 12px;
 }
 
 .stTabs [data-baseweb="tab"] {
-    height: 50px;
-    padding: 0 1.5rem;
+    height: 55px;
+    padding: 0 2rem;
     border-radius: 8px;
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #4a5568 !important;
 }
 
 .stTabs [aria-selected="true"] {
     background: linear-gradient(135deg, #667eea, #764ba2) !important;
     color: white !important;
+    font-weight: 600;
 }
 
+/* Buttons */
 .stButton > button {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    font-weight: 600;
-    border-radius: 8px;
-    border: none;
-    box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    border-radius: 10px !important;
+    border: none !important;
+    padding: 0.75rem 2rem !important;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4) !important;
 }
 
 .stButton > button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5) !important;
 }
 
+/* Metrics */
 [data-testid="stMetric"] {
     background: white;
     padding: 1.5rem;
     border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     text-align: center;
+    border: 2px solid #e2e8f0;
 }
 
 [data-testid="stMetricValue"] {
-    font-size: 2rem !important;
+    font-size: 2.2rem !important;
     font-weight: 700 !important;
+    color: #1a202c !important;
 }
 
 [data-testid="stMetricLabel"] {
-    font-size: 0.85rem !important;
-    color: #718096 !important;
+    font-size: 0.8rem !important;
+    color: #4a5568 !important;
+    font-weight: 600 !important;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.stTextInput > div > div > input,
+/* Input fields */
+.stTextInput > div > div > input {
+    border: 2px solid #cbd5e0 !important;
+    border-radius: 10px !important;
+    font-size: 1rem !important;
+    color: #1a202c !important;
+}
+
+.stTextInput > div > div > input:focus {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15) !important;
+}
+
 .stTextArea > div > div > textarea {
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
+    border: 2px solid #cbd5e0 !important;
+    border-radius: 10px !important;
+    font-size: 1rem !important;
+    color: #1a202c !important;
 }
 
-.stTextInput > div > div > input:focus,
 .stTextArea > div > div > textarea:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15) !important;
 }
 
+/* File uploader */
 .stFileUploader {
-    background: #f7fafc;
-    padding: 2rem;
+    background: white;
+    padding: 2.5rem;
     border-radius: 12px;
-    border: 2px dashed #cbd5e0;
+    border: 3px dashed #cbd5e0;
 }
 
+.stFileUploader:hover {
+    border-color: #667eea;
+    background: #f7fafc;
+}
+
+/* Alerts */
 .stAlert {
-    border-radius: 10px;
-    border: none;
+    border-radius: 10px !important;
+    border: 2px solid !important;
+    font-weight: 500;
 }
 
+/* Section headers */
+.section-header {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a202c !important;
+    margin-bottom: 0.5rem;
+}
+
+.section-desc {
+    color: #4a5568 !important;
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Status badges for results table */
+.status-valid {
+    background: #c6f6d5 !important;
+    color: #22543d !important;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.status-probably_valid {
+    background: #bee3f8 !important;
+    color: #2c5282 !important;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.status-risky {
+    background: #feebc8 !important;
+    color: #7c2d12 !important;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.status-invalid {
+    background: #fed7d7 !important;
+    color: #742a2a !important;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+/* Footer */
 .footer {
     margin-top: 3rem;
     padding: 2rem 0;
-    border-top: 1px solid #e2e8f0;
+    border-top: 2px solid #e2e8f0;
     text-align: center;
-    color: #718096;
+    color: #4a5568 !important;
+    font-size: 0.95rem;
+}
+
+.footer strong {
+    color: #667eea !important;
+}
+
+/* Info boxes */
+.info-box {
+    background: #ebf8ff;
+    border-left: 4px solid #4299e1;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    color: #2c5282 !important;
+    margin: 1rem 0;
+}
+
+/* Spinner container */
+[data-testid="stSpinner"] {
+    color: #667eea !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
 st.set_page_config(page_title="Email Verifier 2026", page_icon="📧", layout="wide")
 
-# Header
-col_logo, col_title = st.columns([1, 6])
-with col_logo:
-    st.markdown("<div style='font-size: 3rem;'>📧</div>", unsafe_allow_html=True)
-with col_title:
-    st.title("Email Verifier")
-    st.markdown("<p style='color: #718096; font-size: 1rem; margin-top: -0.5rem;'>March 2026 Edition • Advanced Email Validation</p>", unsafe_allow_html=True)
-
-st.markdown("---")
+# Header with gradient background
+st.markdown("""
+<div class='main-header'>
+    <h1>📧 Email Verifier</h1>
+    <p>March 2026 Edition • Advanced Email Validation for Gmail, Outlook, Yahoo & More</p>
+</div>
+""", unsafe_allow_html=True)
 
 # Feature highlights
 col1, col2, col3 = st.columns(3)
 with col1:
     st.markdown("""
-    <div style='background: #f7fafc; padding: 1rem; border-radius: 10px; text-align: center;'>
-        <div style='font-size: 2rem;'>⚡</div>
-        <div style='font-weight: 600;'>Fast Processing</div>
-        <div style='font-size: 0.85rem; color: #718096;'>Domain-level delays only</div>
+    <div class='feature-card'>
+        <div class='feature-icon'>⚡</div>
+        <div class='feature-title'>Fast Processing</div>
+        <div class='feature-desc'>Domain-level delays only</div>
     </div>
     """, unsafe_allow_html=True)
 with col2:
     st.markdown("""
-    <div style='background: #f7fafc; padding: 1rem; border-radius: 10px; text-align: center;'>
-        <div style='font-size: 2rem;'>🎯</div>
-        <div style='font-weight: 600;'>Smart Detection</div>
-        <div style='font-size: 0.85rem; color: #718096;'>Gmail/Outlook/Yahoo optimized</div>
+    <div class='feature-card'>
+        <div class='feature-icon'>🎯</div>
+        <div class='feature-title'>Smart Detection</div>
+        <div class='feature-desc'>Gmail/Outlook/Yahoo optimized</div>
     </div>
     """, unsafe_allow_html=True)
 with col3:
     st.markdown("""
-    <div style='background: #f7fafc; padding: 1rem; border-radius: 10px; text-align: center;'>
-        <div style='font-size: 2rem;'>🛡️</div>
-        <div style='font-weight: 600;'>Multi-Layer Check</div>
-        <div style='font-size: 0.85rem; color: #718096;'>Syntax, MX, SMTP & more</div>
+    <div class='feature-card'>
+        <div class='feature-icon'>🛡️</div>
+        <div class='feature-title'>Multi-Layer Check</div>
+        <div class='feature-desc'>Syntax, MX, SMTP & more</div>
     </div>
     """, unsafe_allow_html=True)
 
-st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
 
 # Tabs
 tab1, tab2, tab3 = st.tabs(["📤 Batch Upload", "📝 Manual List", "🔍 Single Email"])
 
 with tab1:
-    st.markdown("### Upload CSV File")
-    st.markdown("<p style='color: #718096; margin-bottom: 1rem;'>Upload a CSV file with an 'email' column</p>", unsafe_allow_html=True)
+    st.markdown('<div class="section-header">📤 Upload CSV File</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-desc">Upload a CSV file with an "email" column containing addresses to verify</div>', unsafe_allow_html=True)
     uploaded = st.file_uploader("", type="csv", label_visibility="collapsed")
 
     if uploaded:
@@ -396,7 +538,7 @@ with tab1:
             df_in = pd.read_csv(uploaded)
             emails = df_in.get("email", pd.Series()).dropna().astype(str).tolist()
             if len(emails) > 0:
-                st.info(f"📊 Loaded **{len(emails)}** emails (duplicates will be removed)")
+                st.markdown(f'<div class="info-box">📊 Loaded <strong>{len(emails)}</strong> emails (duplicates will be removed automatically)</div>', unsafe_allow_html=True)
 
             if st.button("🚀 Start Verification", type="primary", use_container_width=True):
                 with st.spinner("Verifying emails..."):
@@ -417,17 +559,17 @@ with tab1:
         except Exception as e:
             st.error(f"❌ Error: {str(e)}")
     else:
-        st.info("👆 Upload a CSV file to get started")
+        st.markdown('<div class="info-box">👆 Upload a CSV file to get started</div>', unsafe_allow_html=True)
 
 with tab2:
-    st.markdown("### Paste Email List")
-    st.markdown("<p style='color: #718096; margin-bottom: 1rem;'>Enter multiple emails, one per line</p>", unsafe_allow_html=True)
+    st.markdown('<div class="section-header">📝 Paste Email List</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-desc">Enter multiple email addresses, one per line. Blank lines will be ignored.</div>', unsafe_allow_html=True)
     manual_input = st.text_area("", height=250, placeholder="john@example.com\njane@company.org\nbob@test.com", label_visibility="collapsed")
 
     if manual_input:
         emails = [line.strip() for line in manual_input.split("\n") if line.strip()]
         if emails:
-            st.info(f"📊 Found **{len(emails)}** emails to verify")
+            st.markdown(f'<div class="info-box">📊 Found <strong>{len(emails)}</strong> emails to verify</div>', unsafe_allow_html=True)
 
     if st.button("🚀 Verify Emails", type="primary", use_container_width=True):
         if manual_input:
@@ -452,8 +594,8 @@ with tab2:
                 st.warning("⚠️ Please enter at least one email")
 
 with tab3:
-    st.markdown("### Check Single Email")
-    st.markdown("<p style='color: #718096; margin-bottom: 1rem;'>Verify a single email address</p>", unsafe_allow_html=True)
+    st.markdown('<div class="section-header">🔍 Check Single Email</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-desc">Verify a single email address with detailed analysis</div>', unsafe_allow_html=True)
     single = st.text_input("", placeholder="name@example.com", label_visibility="collapsed")
     
     if single and st.button("🔍 Check Email", type="primary", use_container_width=True):
