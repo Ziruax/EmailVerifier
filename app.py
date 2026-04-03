@@ -27,35 +27,35 @@ st.markdown("""
     
     .block-container { padding-top: 3rem; max-width: 800px; }
     
-    h1 { font-size: 1.75rem; font-weight: 500; color: #0f172a; margin-bottom: 0.25rem; letter-spacing: -0.02em; }
-    .subtitle { color: #64748b; font-size: 0.95rem; margin-bottom: 2.5rem; font-weight: 400; }
+    h1 { font-size: 1.75rem; font-weight: 600; color: #1a1a1a; margin-bottom: 0.25rem; letter-spacing: -0.02em; }
+    .subtitle { color: #4a5568; font-size: 0.95rem; margin-bottom: 2.5rem; font-weight: 400; }
     
     .stTabs [data-baseweb="tab-list"] { border-bottom: 1px solid #e2e8f0; gap: 2rem; }
-    .stTabs [data-baseweb="tab"] { color: #64748b; font-weight: 500; font-size: 0.9rem; padding: 0.5rem 0; background: transparent !important; }
-    .stTabs [aria-selected="true"] { color: #0f172a; border-bottom: 2px solid #0f172a; background: transparent !important; border-radius: 0; }
+    .stTabs [data-baseweb="tab"] { color: #4a5568; font-weight: 500; font-size: 0.9rem; padding: 0.5rem 0; background: transparent !important; }
+    .stTabs [aria-selected="true"] { color: #1a1a1a; border-bottom: 2px solid #1a1a1a; background: transparent !important; border-radius: 0; }
     
     .stTextInput input, .stTextArea textarea { 
         background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; 
-        color: #0f172a; font-size: 0.95rem; font-weight: 400;
+        color: #1a1a1a; font-size: 0.95rem; font-weight: 400;
         transition: all 0.2s ease;
     }
-    .stTextInput input:focus, .stTextArea textarea:focus { border-color: #0f172a; outline: none; box-shadow: 0 0 0 1px rgba(15,23,42,0.1); }
+    .stTextInput input:focus, .stTextArea textarea:focus { border-color: #1a1a1a; outline: none; box-shadow: 0 0 0 1px rgba(26,26,26,0.1); }
     
     .stButton button {
-        background: #0f172a; color: #ffffff; border: none; border-radius: 6px;
+        background: #1a1a1a; color: #ffffff; border: none; border-radius: 6px;
         padding: 0.625rem 1.5rem; font-weight: 500; font-size: 0.9rem;
         transition: all 0.2s ease;
     }
-    .stButton button:hover { background: #1e293b; transform: translateY(-1px); }
+    .stButton button:hover { background: #2d2d2d; transform: translateY(-1px); }
     
     .metric-box {
         background: #ffffff; padding: 1.5rem; border-radius: 8px;
         text-align: center; border: 1px solid #e2e8f0;
     }
-    .metric-num { font-size: 1.75rem; font-weight: 500; color: #0f172a; }
-    .metric-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; margin-top: 0.5rem; }
+    .metric-num { font-size: 1.75rem; font-weight: 600; color: #1a1a1a; }
+    .metric-label { font-size: 0.75rem; color: #4a5568; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; margin-top: 0.5rem; }
     
-    .badge { display: inline-block; padding: 0.375rem 0.875rem; border-radius: 99px; font-size: 0.8rem; font-weight: 500; }
+    .badge { display: inline-block; padding: 0.375rem 0.875rem; border-radius: 99px; font-size: 0.8rem; font-weight: 600; }
     .badge-valid { background: #dcfce7; color: #166534; }
     .badge-probably_valid { background: #dbeafe; color: #1e40af; }
     .badge-probably { background: #dbeafe; color: #1e40af; }
@@ -71,15 +71,15 @@ st.markdown("""
     .result-card.risky { background: #fffbeb; border-color: #fcd34d; }
     .result-card.invalid { background: #fef2f2; border-color: #fca5a5; }
     
-    .result-email { font-size: 1.25rem; font-weight: 500; color: #0f172a; margin-bottom: 1rem; letter-spacing: -0.01em; }
-    .result-text { font-size: 0.9rem; color: #475569; font-weight: 400; }
-    .result-label { font-weight: 500; color: #64748b; }
+    .result-email { font-size: 1.25rem; font-weight: 600; color: #1a1a1a; margin-bottom: 1rem; letter-spacing: -0.01em; }
+    .result-text { font-size: 0.9rem; color: #2d3748; font-weight: 400; }
+    .result-label { font-weight: 600; color: #4a5568; }
     
     #MainMenu, footer, header { visibility: hidden; }
     
     .stDataFrame { border: 1px solid #e2e8f0; border-radius: 8px; }
-    .stDataFrame th { background: #f8fafc; color: #64748b; font-weight: 500; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
-    .stDataFrame td { color: #334155; font-size: 0.9rem; }
+    .stDataFrame th { background: #f8fafc; color: #4a5568; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stDataFrame td { color: #1a1a1a; font-size: 0.9rem; }
     
     .stFileUploader { border: 1px dashed #e2e8f0; border-radius: 8px; padding: 1.5rem; }
     .stFileUploader:hover { border-color: #cbd5e1; background: #f8fafc; }
