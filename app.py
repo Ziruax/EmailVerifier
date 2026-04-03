@@ -27,35 +27,36 @@ st.markdown("""
     
     .block-container { padding-top: 3rem; max-width: 800px; }
     
-    h1 { font-size: 1.75rem; font-weight: 600; color: #111; margin-bottom: 0.5rem; }
-    .subtitle { color: #666; font-size: 0.95rem; margin-bottom: 2rem; }
+    h1 { font-size: 1.75rem; font-weight: 600; color: #000000; margin-bottom: 0.5rem; }
+    .subtitle { color: #4a4a4a; font-size: 0.95rem; margin-bottom: 2rem; }
     
-    .stTabs [data-baseweb="tab-list"] { border-bottom: 1px solid #eaeaea; gap: 1.5rem; }
-    .stTabs [data-baseweb="tab"] { color: #888; font-weight: 500; }
-    .stTabs [aria-selected="true"] { color: #111; border-bottom: 2px solid #111; }
+    .stTabs [data-baseweb="tab-list"] { border-bottom: 1px solid #d0d0d0; gap: 1.5rem; }
+    .stTabs [data-baseweb="tab"] { color: #5a5a5a; font-weight: 500; }
+    .stTabs [aria-selected="true"] { color: #000000; border-bottom: 2px solid #000000; }
     
     .stTextInput input, .stTextArea textarea { 
-        background: #fafafa; border: 1px solid #e0e0e0; border-radius: 6px; 
+        background: #ffffff; border: 1px solid #cccccc; border-radius: 6px; 
+        color: #000000;
     }
     
     .stButton button {
-        background: #111; color: #fff; border: none; border-radius: 6px;
+        background: #000000; color: #ffffff; border: none; border-radius: 6px;
         padding: 0.5rem 1.25rem; font-weight: 500;
     }
-    .stButton button:hover { background: #333; }
+    .stButton button:hover { background: #333333; }
     
     .metric-box {
-        background: #fafafa; padding: 1rem; border-radius: 8px;
-        text-align: center; border: 1px solid #f0f0f0;
+        background: #ffffff; padding: 1rem; border-radius: 8px;
+        text-align: center; border: 1px solid #d0d0d0;
     }
-    .metric-num { font-size: 1.5rem; font-weight: 600; color: #111; }
-    .metric-label { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+    .metric-num { font-size: 1.5rem; font-weight: 600; color: #000000; }
+    .metric-label { font-size: 0.75rem; color: #5a5a5a; text-transform: uppercase; letter-spacing: 0.5px; }
     
     .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.8rem; font-weight: 500; }
-    .badge-valid { background: #e6f4ea; color: #1e7e34; }
-    .badge-probably { background: #e8f0fe; color: #1967d2; }
-    .badge-risky { background: #fef7e0; color: #b98900; }
-    .badge-invalid { background: #fce8e6; color: #c5221f; }
+    .badge-valid { background: #2e7d32; color: #ffffff; }
+    .badge-probably { background: #1565c0; color: #ffffff; }
+    .badge-risky { background: #f9a825; color: #000000; }
+    .badge-invalid { background: #c62828; color: #ffffff; }
     
     #MainMenu, footer, header { visibility: hidden; }
 </style>
@@ -235,13 +236,13 @@ def main():
                     colors = {"valid": "#e6f4ea", "probably_valid": "#e8f0fe", "risky": "#fef7e0", "invalid": "#fce8e6"}
                     bg = colors.get(row['Status'], "#f0f0f0")
                     st.markdown(f"""
-                    <div style="background:{bg};padding:1.5rem;border-radius:8px;border:1px solid #eee;margin-top:1rem;">
-                        <div style="font-size:1.2rem;font-weight:600;margin-bottom:0.5rem">{row['Email']}</div>
+                    <div style="background:{bg};padding:1.5rem;border-radius:8px;border:1px solid #ccc;margin-top:1rem;">
+                        <div style="font-size:1.2rem;font-weight:600;margin-bottom:0.5rem;color:#000000">{row['Email']}</div>
                         <div style="display:flex;gap:1rem;align-items:center">
                             <span class="badge badge-{row['Status']}">{row['Status'].replace('_',' ').title()}</span>
-                            <span style="color:#666;font-size:0.9rem">Score: <strong>{row['Score']}</strong>/100</span>
+                            <span style="color:#333333;font-size:0.9rem">Score: <strong>{row['Score']}</strong>/100</span>
                         </div>
-                        <div style="margin-top:1rem;font-size:0.9rem;color:#555">
+                        <div style="margin-top:1rem;font-size:0.9rem;color:#333333">
                             <strong>Reason:</strong> {row['Reason']}<br>
                             <strong>Details:</strong> {row['Details']}
                         </div>
