@@ -27,19 +27,19 @@ st.markdown("""
     
     .block-container { padding-top: 3rem; max-width: 800px; }
     
-    h1 { font-size: 1.75rem; font-weight: 600; color: #1a1a1a; margin-bottom: 0.25rem; letter-spacing: -0.02em; }
-    .subtitle { color: #4a5568; font-size: 0.95rem; margin-bottom: 2.5rem; font-weight: 400; }
+    h1 { font-size: 1.75rem; font-weight: 600; color: #ffffff; margin-bottom: 0.25rem; letter-spacing: -0.02em; }
+    .subtitle { color: #e2e8f0; font-size: 0.95rem; margin-bottom: 2.5rem; font-weight: 400; }
     
-    .stTabs [data-baseweb="tab-list"] { border-bottom: 1px solid #e2e8f0; gap: 2rem; }
-    .stTabs [data-baseweb="tab"] { color: #4a5568; font-weight: 500; font-size: 0.9rem; padding: 0.5rem 0; background: transparent !important; }
-    .stTabs [aria-selected="true"] { color: #1a1a1a; border-bottom: 2px solid #1a1a1a; background: transparent !important; border-radius: 0; }
+    .stTabs [data-baseweb="tab-list"] { border-bottom: 1px solid #4a5568; gap: 2rem; }
+    .stTabs [data-baseweb="tab"] { color: #9ca3af; font-weight: 500; font-size: 0.9rem; padding: 0.5rem 0; background: transparent !important; }
+    .stTabs [aria-selected="true"] { color: #ffffff; border-bottom: 2px solid #ffffff; background: transparent !important; border-radius: 0; }
     
     .stTextInput input, .stTextArea textarea { 
-        background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; 
-        color: #1a1a1a; font-size: 0.95rem; font-weight: 400;
+        background: #1a1a1a; border: 1px solid #ffffff; border-radius: 6px; 
+        color: #ffffff; font-size: 0.95rem; font-weight: 400;
         transition: all 0.2s ease;
     }
-    .stTextInput input:focus, .stTextArea textarea:focus { border-color: #1a1a1a; outline: none; box-shadow: 0 0 0 1px rgba(26,26,26,0.1); }
+    .stTextInput input:focus, .stTextArea textarea:focus { border-color: #e2e8f0; outline: none; box-shadow: 0 0 0 1px rgba(255,255,255,0.2); }
     
     .stButton button {
         background: #1a1a1a; color: #ffffff; border: none; border-radius: 6px;
@@ -49,11 +49,11 @@ st.markdown("""
     .stButton button:hover { background: #2d2d2d; transform: translateY(-1px); }
     
     .metric-box {
-        background: #ffffff; padding: 1.5rem; border-radius: 8px;
-        text-align: center; border: 1px solid #e2e8f0;
+        background: #1a1a1a; padding: 1.5rem; border-radius: 8px;
+        text-align: center; border: 2px solid #ffffff;
     }
-    .metric-num { font-size: 1.75rem; font-weight: 600; color: #1a1a1a; }
-    .metric-label { font-size: 0.75rem; color: #4a5568; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; margin-top: 0.5rem; }
+    .metric-num { font-size: 1.75rem; font-weight: 600; color: #ffffff; }
+    .metric-label { font-size: 0.75rem; color: #e2e8f0; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; margin-top: 0.5rem; }
     
     .badge { display: inline-block; padding: 0.375rem 0.875rem; border-radius: 99px; font-size: 0.8rem; font-weight: 600; }
     .badge-valid { background: #dcfce7; color: #166534; }
@@ -63,26 +63,26 @@ st.markdown("""
     .badge-invalid { background: #fee2e2; color: #991b1b; }
     
     .result-card {
-        background: #ffffff; padding: 2rem; border-radius: 12px;
-        border: 1px solid #e2e8f0;
+        background: #1a1a1a; padding: 2rem; border-radius: 12px;
+        border: 2px solid #ffffff;
     }
-    .result-card.valid { background: #f0fdf4; border-color: #86efac; }
-    .result-card.probably_valid { background: #eff6ff; border-color: #93c5fd; }
-    .result-card.risky { background: #fffbeb; border-color: #fcd34d; }
-    .result-card.invalid { background: #fef2f2; border-color: #fca5a5; }
+    .result-card.valid { background: #1a1a1a; border-color: #16a34a; }
+    .result-card.probably_valid { background: #1a1a1a; border-color: #2563eb; }
+    .result-card.risky { background: #1a1a1a; border-color: #d97706; }
+    .result-card.invalid { background: #1a1a1a; border-color: #dc2626; }
     
-    .result-email { font-size: 1.25rem; font-weight: 600; color: #1a1a1a; margin-bottom: 1rem; letter-spacing: -0.01em; }
-    .result-text { font-size: 0.9rem; color: #2d3748; font-weight: 400; }
-    .result-label { font-weight: 600; color: #4a5568; }
+    .result-email { font-size: 1.25rem; font-weight: 600; color: #ffffff; margin-bottom: 1rem; letter-spacing: -0.01em; }
+    .result-text { font-size: 0.9rem; color: #e2e8f0; font-weight: 400; }
+    .result-label { font-weight: 600; color: #ffffff; }
     
     #MainMenu, footer, header { visibility: hidden; }
     
-    .stDataFrame { border: 1px solid #e2e8f0; border-radius: 8px; }
-    .stDataFrame th { background: #f8fafc; color: #4a5568; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
-    .stDataFrame td { color: #1a1a1a; font-size: 0.9rem; }
+    .stDataFrame { border: 1px solid #ffffff; border-radius: 8px; }
+    .stDataFrame th { background: #1a1a1a; color: #ffffff; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stDataFrame td { color: #e2e8f0; font-size: 0.9rem; }
     
-    .stFileUploader { border: 1px dashed #e2e8f0; border-radius: 8px; padding: 1.5rem; }
-    .stFileUploader:hover { border-color: #cbd5e1; background: #f8fafc; }
+    .stFileUploader { border: 1px dashed #ffffff; border-radius: 8px; padding: 1.5rem; }
+    .stFileUploader:hover { border-color: #e2e8f0; background: #1a1a1a; }
 </style>
 """, unsafe_allow_html=True)
 
