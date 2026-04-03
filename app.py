@@ -1,16 +1,14 @@
 import streamlit as st
 import pandas as pd
 import re
-import dns.resolver
 import smtplib
-import socket
 import time
+import requests
 from typing import List, Tuple
 
 # -----------------------------------------------------------------------------
-# CONFIGURATION
+# PAGE CONFIG
 # -----------------------------------------------------------------------------
-
 st.set_page_config(
     page_title="Email Verifier",
     page_icon="📧",
@@ -21,383 +19,289 @@ st.set_page_config(
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
-    
     * { font-family: 'Inter', sans-serif; }
-    
     .block-container { padding-top: 3rem; max-width: 800px; }
-    
     h1 { font-size: 1.75rem; font-weight: 600; color: #ffffff; margin-bottom: 0.25rem; letter-spacing: -0.02em; }
     .subtitle { color: #e2e8f0; font-size: 0.95rem; margin-bottom: 2.5rem; font-weight: 400; }
-    
     .stTabs [data-baseweb="tab-list"] { border-bottom: 1px solid #4a5568; gap: 2rem; }
     .stTabs [data-baseweb="tab"] { color: #9ca3af; font-weight: 500; font-size: 0.9rem; padding: 0.5rem 0; background: transparent !important; }
     .stTabs [aria-selected="true"] { color: #ffffff; border-bottom: 2px solid #ffffff; background: transparent !important; border-radius: 0; }
-    
-    .stTextInput input, .stTextArea textarea { 
-        background: #1a1a1a; border: 1px solid #ffffff; border-radius: 6px; 
-        color: #ffffff; font-size: 0.95rem; font-weight: 400;
-        transition: all 0.2s ease;
+    .stTextInput input, .stTextArea textarea {
+        background: #1a1a1a; border: 1px solid #ffffff; border-radius: 6px;
+        color: #ffffff; font-size: 0.95rem; font-weight: 400; transition: all 0.2s ease;
     }
-    .stTextInput input:focus, .stTextArea textarea:focus { border-color: #e2e8f0; outline: none; box-shadow: 0 0 0 1px rgba(255,255,255,0.2); }
-    
+    .stTextInput input:focus, .stTextArea textarea:focus { border-color: #e2e8f0; box-shadow: 0 0 0 1px rgba(255,255,255,0.2); }
     .stButton button {
         background: #1a1a1a; color: #ffffff; border: none; border-radius: 6px;
-        padding: 0.625rem 1.5rem; font-weight: 500; font-size: 0.9rem;
-        transition: all 0.2s ease;
+        padding: 0.625rem 1.5rem; font-weight: 500; font-size: 0.9rem; transition: all 0.2s ease;
     }
     .stButton button:hover { background: #2d2d2d; transform: translateY(-1px); }
-    
-    .metric-box {
-        background: #1a1a1a; padding: 1.5rem; border-radius: 8px;
-        text-align: center; border: 2px solid #ffffff;
-    }
+    .metric-box { background: #1a1a1a; padding: 1.5rem; border-radius: 8px; text-align: center; border: 2px solid #ffffff; }
     .metric-num { font-size: 1.75rem; font-weight: 600; color: #ffffff; }
     .metric-label { font-size: 0.75rem; color: #e2e8f0; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; margin-top: 0.5rem; }
-    
     .badge { display: inline-block; padding: 0.375rem 0.875rem; border-radius: 99px; font-size: 0.8rem; font-weight: 600; }
     .badge-valid { background: #dcfce7; color: #166534; }
     .badge-probably_valid { background: #dbeafe; color: #1e40af; }
-    .badge-probably { background: #dbeafe; color: #1e40af; }
     .badge-risky { background: #fef3c7; color: #92400e; }
     .badge-invalid { background: #fee2e2; color: #991b1b; }
-    
-    .result-card {
-        background: #1a1a1a; padding: 2rem; border-radius: 12px;
-        border: 2px solid #ffffff;
-    }
-    .result-card.valid { background: #1a1a1a; border-color: #16a34a; }
-    .result-card.probably_valid { background: #1a1a1a; border-color: #2563eb; }
-    .result-card.risky { background: #1a1a1a; border-color: #d97706; }
-    .result-card.invalid { background: #1a1a1a; border-color: #dc2626; }
-    
-    .result-email { font-size: 1.25rem; font-weight: 600; color: #ffffff; margin-bottom: 1rem; letter-spacing: -0.01em; }
-    .result-text { font-size: 0.9rem; color: #e2e8f0; font-weight: 400; }
+    .result-card { background: #1a1a1a; padding: 2rem; border-radius: 12px; border: 2px solid #ffffff; }
+    .result-card.valid { border-color: #16a34a; }
+    .result-card.probably_valid { border-color: #2563eb; }
+    .result-card.risky { border-color: #d97706; }
+    .result-card.invalid { border-color: #dc2626; }
+    .result-email { font-size: 1.25rem; font-weight: 600; color: #ffffff; margin-bottom: 1rem; }
+    .result-text { font-size: 0.9rem; color: #e2e8f0; }
     .result-label { font-weight: 600; color: #ffffff; }
-    
     #MainMenu, footer, header { visibility: hidden; }
-    
-    .stDataFrame { border: 1px solid #ffffff; border-radius: 8px; }
-    .stDataFrame th { background: #1a1a1a; color: #ffffff; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
-    .stDataFrame td { color: #e2e8f0; font-size: 0.9rem; }
-    
-    .stFileUploader { border: 1px dashed #ffffff; border-radius: 8px; padding: 1.5rem; }
-    .stFileUploader:hover { border-color: #e2e8f0; background: #1a1a1a; }
 </style>
 """, unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# CONSTANTS
+# -----------------------------------------------------------------------------
 
 DISPOSABLE_DOMAINS = {
     "tempmail.com", "throwaway.com", "guerrillamail.com", "mailinator.com",
     "10minutemail.com", "fakeinbox.com", "trashmail.com", "yopmail.com",
-    "sharklasers.com", "guerrillamailblock.com", "grr.la", "guerrillamail.info",
-    "guerrillamail.biz", "guerrillamail.de", "guerrillamail.net", "guerrillamail.org",
-    "spam4.me", "maildrop.cc", "dispostable.com", "mailnull.com", "spamgourmet.com",
-    "trashmail.at", "trashmail.io", "trashmail.me", "getairmail.com", "discard.email",
-    "wegwerfadresse.de", "spamhere.in", "anonbox.net", "binkmail.com", "bob.email",
-    "clrmail.com", "cust.in", "dispostable.com", "filzmail.com", "fivemail.de",
-    "haltospam.com", "ieatspam.eu", "ieatspam.info", "inoutmail.de", "jetable.fr.nf",
-    "kasmail.com", "klassmaster.com", "kurzepost.de", "lhsdv.com", "lifebyfood.com",
-    "link2mail.net", "litedrop.com", "lol.ovpn.to", "lookugly.com", "lordvoldemo.rt",
-    "lortemail.dk", "meltmail.com", "mintemail.com", "mt2009.com", "mt2014.com",
-    "mytrashmail.com", "netzidiot.de", "nik.kr", "no-spam.ws", "nobulk.com",
-    "noclickemail.com", "nogmailspam.info", "nomail.pw", "nomail.xl.cx",
-    "nomail2me.com", "nospam.ze.tc", "nospamfor.us", "nospammail.net",
-    "nowmymail.com", "objectmail.com", "obobbo.com", "odaymail.com",
-    "oneoffemail.com", "onewaymail.com", "online.ms", "oopi.org",
-    "owlpic.com", "pookmail.com", "proxymail.eu", "punkass.com",
-    "putthisinyourspamdatabase.com", "quickinbox.com", "rcpt.at",
-    "re-gister.com", "receiveee.com", "rklips.com", "rppkn.com",
-    "rtrtr.com", "s0ny.net", "safe-mail.gq", "safetymail.info",
-    "safetypost.de", "sandelf.de", "SendSpamHere.com", "sf.bl.org.ua",
-    "sharedmailbox.org", "sharklasers.com", "shieldemail.com", "shiftmail.com",
-    "shortmail.net", "shredmail.com", "siliwangi.ga", "sinnlos-mail.de",
-    "siteposter.net", "slaskpost.se", "slopsbox.com", "slow-talk.com",
-    "smellfear.com", "snakemail.com", "sneakemail.com", "sneakmail.de",
-    "snkmail.com", "sofimail.com", "sofort-mail.de", "soisz.com",
-    "soodomail.com", "soodonims.com", "spam.la", "spam.su", "spam4.me",
-    "spamavert.com", "spambob.com", "spambob.net", "spambob.org",
-    "spambog.com", "spambog.de", "spambog.ru", "spambox.info", "spambox.irishspringrealty.com",
-    "spambox.us", "spamcannon.com", "spamcannon.net", "spamcero.com",
-    "spamcon.org", "spamcorptastic.com", "spamcowboy.com", "spamcowboy.net",
-    "spamcowboy.org", "spamday.com", "spamex.com", "spamfree24.de",
-    "spamfree24.eu", "spamfree24.info", "spamfree24.net", "spamfree24.org",
-    "spamgoes.in", "spamgourmet.com", "spamgourmet.net", "spamgourmet.org",
-    "spamherelots.com", "spamhereplease.com", "spamhole.com", "spamify.com",
-    "spaminator.de", "spamkill.info", "spaml.com", "spaml.de",
-    "spammotel.com", "spamoff.de", "spamslicer.com", "spamspot.com",
-    "spamthis.co.uk", "spamthisplease.com", "spamtroll.net",
-    "spamwaste.com", "spamx.men", "spamxme.com", "spazmail.com",
-    "speed.1s.fr", "splyb.com", "spoofmail.de", "squizzy.net",
-    "ssoia.com", "startkeys.com", "stinkefinger.net", "stuffmail.de",
-    "super-auswahl.de", "supergreatmail.com", "supermailer.jp",
-    "superrito.com", "superstachel.de", "suremail.info", "svk.jp",
-    "sweetxxx.de", "tafmail.com", "tagyourself.com", "talkinator.com",
-    "teewars.org", "telecomix.pl", "tempalias.com", "tempe-mail.com",
-    "tempemail.biz", "tempemail.com", "tempemail.net", "tempinbox.co.uk",
-    "tempinbox.com", "tempmail.eu", "tempmail.it", "tempmail2.com",
-    "tempomail.fr", "temporarily.de", "temporarioemail.com.br",
-    "temporaryemail.net", "temporaryemail.us", "temporaryforwarding.com",
-    "temporaryinbox.com", "temporarymail.org", "tempsky.com",
-    "tempthe.net", "tempymail.com", "thanksnospam.info", "thankyou2010.com",
-    "thc.st", "thelimestones.com", "thisisnotmyrealemail.com",
-    "thismail.net", "throwam.com", "throwawayemailaddress.com",
-    "throwam.com", "tilien.com", "tittbit.in", "tizi.com",
-    "tmailinator.com", "toiea.com", "toomail.biz", "topranklist.de",
-    "tradermail.info", "trash-amil.com", "trash-mail.at",
-    "trash-mail.cf", "trash-mail.de", "trash-mail.ga", "trash-mail.gq",
-    "trash-mail.io", "trash-mail.ml", "trash-mail.tk",
-    "trashemail.de", "trashmail.at", "trashmail.com", "trashmail.io",
-    "trashmail.me", "trashmail.net", "trashmail.org",
-    "trashmailer.com", "trashymail.com", "trasz.com",
-    "trbvm.com", "trbvn.com", "trialmail.de", "trickmail.net",
-    "trillianpro.com", "tryalert.com", "turual.com", "twzhhq.com",
-    "tyldd.com", "uggsrock.com", "umail.net", "unlimit.com",
-    "unmail.ru", "uroid.com", "us.af", "utiket.us",
-    "uu.gl", "valemail.net", "venompen.com", "veryrealemail.com",
-    "viditag.com", "viewcastmedia.com", "viewcastmedia.net",
-    "viewcastmedia.org", "viralplays.com", "vpn.st", "vsimcard.com",
-    "vubby.com", "walala.org", "walkmail.net", "watchfull.net",
-    "webemail.me", "weg-werf-email.de", "wegwerfadresse.de",
-    "wegwerfemail.com", "wegwerfemail.de", "wegwerfmail.de",
-    "wegwerfmail.info", "wegwerfmail.net", "wegwerfmail.org",
-    "wembley.ovh", "wetrainbayarea.com", "wetrainbayarea.org",
-    "wh4f.org", "whyspam.me", "willhackforfood.biz",
-    "willselfdestruct.com", "winemaven.info", "wronghead.com",
-    "wuzupmail.net", "www.e4ward.com", "www.gishpuppy.com",
-    "www.mailinator.com", "wwwnew.eu", "xagloo.co", "xagloo.com",
-    "xemaps.com", "xents.com", "xmail.biz", "xmail.net", "xmail.org",
-    "xmaily.com", "xn--9kq967o.com", "xpectedget.com", "xup.in",
-    "xww.ro", "yapped.net", "yeah.net", "yesey.net",
-    "yogamaven.com", "yopmail.com", "yopmail.fr", "yoru-dea.com",
-    "youmail.ga", "youmailr.com", "ypmail.webarnak.fr.eu.org",
-    "yroid.com", "yuurok.com", "z1p.biz", "za.com",
-    "zehnminutenmail.de", "zetmail.com", "zoemail.net",
-    "zoemail.org", "zomg.inf",
+    "spam4.me", "maildrop.cc", "dispostable.com", "trashmail.at",
+    "trashmail.io", "trashmail.me", "getairmail.com", "discard.email",
+    "sharklasers.com", "spambog.com", "spamgourmet.com", "tempemail.com",
+    "tempr.email", "throwam.com", "spamex.com", "spamfree24.de",
+    "mytrashmail.com", "spamcannon.com", "spambox.us", "yopmail.fr",
+    "trashmailer.com", "trashymail.com", "wegwerfemail.com", "filzmail.com",
+    "spambox.info", "nomail.pw", "spamoff.de", "zetmail.com",
+    "spaml.com", "spaml.de", "spammotel.com", "kurzepost.de",
+    "spamday.com", "anonbox.net", "binkmail.com", "tempalias.com",
+    "spamkill.info", "mintemail.com", "tempinbox.com",
+    "temporaryemail.net", "quickinbox.com", "zoemail.org",
+    "grr.la", "guerrillamail.info", "guerrillamail.biz",
 }
 
-# Role prefixes — valid for delivery but not personal
 ROLE_PREFIXES = {
     "admin", "support", "info", "contact", "sales", "marketing",
     "hr", "jobs", "billing", "help", "noreply", "no-reply",
     "postmaster", "webmaster", "abuse", "hostmaster", "security",
     "privacy", "legal", "press", "media", "team", "hello",
-    "office", "mail", "email", "enquiries", "enquiry", "service",
-    "services", "feedback", "newsletter", "donotreply", "do-not-reply",
+    "office", "mail", "email", "enquiries", "service", "services",
+    "feedback", "newsletter", "donotreply", "do-not-reply",
     "unsubscribe", "bounce", "mailer-daemon", "daemon",
 }
 
-MAJOR_PROVIDERS = {
-    "gmail.com", "yahoo.com", "outlook.com", "hotmail.com",
-    "aol.com", "icloud.com", "live.com", "msn.com",
-    "protonmail.com", "proton.me", "zoho.com", "fastmail.com",
-    "tutanota.com", "pm.me", "yahoo.co.uk", "yahoo.co.in",
-    "googlemail.com", "mail.com", "gmx.com", "gmx.net",
-    "yandex.com", "yandex.ru",
+# Providers that always block port-25 — confirmed MX is enough signal
+SMTP_BLOCKED_PROVIDERS = {
+    "gmail.com", "googlemail.com", "yahoo.com", "yahoo.co.uk", "yahoo.co.in",
+    "outlook.com", "hotmail.com", "live.com", "msn.com",
+    "aol.com", "icloud.com", "me.com", "mac.com",
+    "protonmail.com", "proton.me", "pm.me",
+    "zoho.com", "fastmail.com", "fastmail.fm",
+    "tutanota.com", "tutanota.de", "tuta.io",
+    "gmx.com", "gmx.net", "gmx.de",
+    "mail.com", "yandex.com", "yandex.ru",
+    "office365.com", "microsoft.com",
 }
 
-# Known providers that always block port-25 SMTP verification
-SMTP_ALWAYS_BLOCKED = MAJOR_PROVIDERS | {
-    "office365.com", "microsoft.com", "exchange.microsoft.com",
-}
+DOH_ENDPOINTS = [
+    "https://dns.google/resolve",
+    "https://cloudflare-dns.com/dns-query",
+]
 
 # -----------------------------------------------------------------------------
-# FUNCTIONS
+# DNS-OVER-HTTPS  (bypasses unreliable local DNS on Streamlit free tier)
+# -----------------------------------------------------------------------------
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_mx_doh(domain: str) -> List[str]:
+    """
+    Fetch MX records via DNS-over-HTTPS.
+    Tries Google DoH first, then Cloudflare as fallback.
+    Returns sorted list of MX hostnames, empty list if none found.
+    """
+    for endpoint in DOH_ENDPOINTS:
+        try:
+            r = requests.get(
+                endpoint,
+                params={"name": domain, "type": "MX"},
+                headers={"Accept": "application/dns-json"},
+                timeout=6,
+            )
+            if r.status_code != 200:
+                continue
+            data = r.json()
+            if data.get("Status") == 3:   # NXDOMAIN — domain doesn't exist
+                return []
+            mx_list = []
+            for ans in data.get("Answer", []):
+                if ans.get("type") == 15:  # MX record type ID
+                    parts = str(ans["data"]).split(" ", 1)
+                    if len(parts) == 2:
+                        mx_list.append((int(parts[0]), parts[1].rstrip(".")))
+            mx_list.sort(key=lambda x: x[0])
+            return [h for _, h in mx_list]
+        except Exception:
+            continue
+    return []
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def domain_exists_doh(domain: str) -> bool:
+    """Check if domain resolves at all via DoH (A record lookup)."""
+    for endpoint in DOH_ENDPOINTS:
+        try:
+            r = requests.get(
+                endpoint,
+                params={"name": domain, "type": "A"},
+                headers={"Accept": "application/dns-json"},
+                timeout=6,
+            )
+            if r.status_code != 200:
+                continue
+            data = r.json()
+            if data.get("Status") == 3:
+                return False
+            return len(data.get("Answer", [])) > 0
+        except Exception:
+            continue
+    # If DoH itself fails (network issue), assume domain might exist — don't penalize
+    return True
+
+
+# -----------------------------------------------------------------------------
+# SYNTAX
 # -----------------------------------------------------------------------------
 
 def validate_syntax(email: str) -> bool:
-    """
-    Stricter RFC-5321 syntax check:
-    - local part: alphanumerics + . _ % + - (no consecutive dots, not starting/ending with dot)
-    - domain: proper hostname segments
-    - TLD: 2+ chars
-    """
-    pattern = r'^(?!.*\.\.)[a-zA-Z0-9][a-zA-Z0-9._%+\-]{0,62}[a-zA-Z0-9]@[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$'
     if len(email) > 254:
         return False
+    local, _, domain_part = email.partition("@")
+    if not local or not domain_part:
+        return False
+    if ".." in local:
+        return False
+    pattern = r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$'
     return bool(re.match(pattern, email))
 
-def validate_syntax_simple(email: str) -> bool:
-    """Fallback for single-char local parts like a@b.com"""
-    return bool(re.match(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email))
 
-def check_disposable(domain: str) -> bool:
-    return domain.lower() in DISPOSABLE_DOMAINS
-
-def check_role(local: str) -> bool:
-    return local.lower() in ROLE_PREFIXES
-
-@st.cache_data(ttl=7200)
-def get_mx(domain: str) -> List[str]:
-    """Returns sorted list of MX hostnames, empty list on failure."""
-    try:
-        answers = dns.resolver.resolve(domain, 'MX', lifetime=8.0)
-        return [str(r.exchange).rstrip('.') for r in sorted(answers, key=lambda x: x.preference)]
-    except dns.resolver.NXDOMAIN:
-        return []
-    except dns.resolver.NoAnswer:
-        return []
-    except Exception:
-        return []
-
-@st.cache_data(ttl=7200)
-def has_a_record(domain: str) -> bool:
-    """Check if domain has at least an A record (fallback when no MX)."""
-    try:
-        dns.resolver.resolve(domain, 'A', lifetime=5.0)
-        return True
-    except Exception:
-        return False
+# -----------------------------------------------------------------------------
+# SMTP
+# -----------------------------------------------------------------------------
 
 def smtp_check(email: str, mx_list: List[str], timeout: int = 6) -> Tuple[str, str]:
     """
-    Returns (result, detail):
-      - 'accept'  : server confirmed mailbox exists (250)
-      - 'reject'  : server explicitly rejected mailbox (550/551/553)
-      - 'blocked' : connection blocked / port 25 refused (typical for cloud hosts)
-      - 'greylist': server issued temporary rejection (450/451) — not invalid
-      - 'unknown' : catch-all server or other unknown response
-      - 'error'   : unexpected failure
+    Returns (result_code, detail).
+    Codes: 'accept' | 'reject' | 'greylist' | 'blocked' | 'unknown' | 'error'
     """
-    if not mx_list:
-        return 'blocked', 'No MX'
-
-    connect_errors = 0
     for mx in mx_list[:3]:
         try:
             server = smtplib.SMTP(timeout=timeout)
-            server.set_debuglevel(0)
             server.connect(mx, 25)
             server.ehlo_or_helo_if_needed()
-            server.mail('verify@example.com')
+            server.mail("verify@example.com")
             code, msg = server.rcpt(email)
             server.quit()
-
-            msg_lower = msg.decode(errors='ignore').lower() if isinstance(msg, bytes) else str(msg).lower()
-
+            msg_s = msg.decode(errors="ignore").lower() if isinstance(msg, bytes) else str(msg).lower()
             if code == 250:
-                return 'accept', 'Accepted'
+                return "accept", "Accepted"
             elif code in (550, 551, 553):
-                # Distinguish explicit "user unknown" from catch-all rejection
-                if any(k in msg_lower for k in ['user', 'mailbox', 'unknown', 'does not exist', 'no such']):
-                    return 'reject', f'User unknown ({code})'
-                return 'reject', f'Rejected ({code})'
+                if any(k in msg_s for k in ["user", "mailbox", "unknown", "does not exist", "no such", "invalid"]):
+                    return "reject", f"User unknown ({code})"
+                return "reject", f"Rejected ({code})"
             elif code in (450, 451, 452):
-                return 'greylist', f'Temp reject ({code})'
-            elif code == 421:
-                return 'blocked', 'Service unavailable'
+                return "greylist", f"Temp reject ({code})"
             elif code == 252:
-                # Cannot verify but will attempt delivery — effectively unknown but valid-ish
-                return 'unknown', 'Cannot verify (252)'
+                return "unknown", "Catch-all (252)"
+            elif code == 421:
+                return "blocked", "Service unavailable"
             else:
-                return 'unknown', f'Code {code}'
-
-        except (ConnectionRefusedError, OSError) as e:
-            # Port 25 blocked (firewall/cloud hosting) — don't treat as invalid
-            connect_errors += 1
+                return "unknown", f"Code {code}"
+        except (ConnectionRefusedError, OSError):
             continue
         except smtplib.SMTPConnectError:
-            connect_errors += 1
             continue
         except smtplib.SMTPServerDisconnected:
-            # Server closed connection — often greylisting
-            return 'greylist', 'Disconnected early'
-        except smtplib.SMTPException as e:
-            connect_errors += 1
-            continue
+            return "greylist", "Early disconnect"
         except Exception:
-            connect_errors += 1
             continue
+    return "blocked", "Port 25 blocked"
 
-    if connect_errors == len(mx_list[:3]):
-        return 'blocked', 'Port 25 blocked'
-    return 'error', 'All MX failed'
 
+# -----------------------------------------------------------------------------
+# SCORING
+# -----------------------------------------------------------------------------
 
 def calc_score(
-    email: str,
-    syntax: bool,
+    syntax_ok: bool,
     disposable: bool,
     role: bool,
-    mx_ok: bool,
-    a_record: bool,
+    mx_records: List[str],
+    domain_found: bool,
     smtp_result: str,
     domain: str,
 ) -> Tuple[int, str, str]:
     """
-    Revised scoring:
-    - Syntax failure or disposable = immediately invalid
-    - MX absence = strong negative but not automatic invalid
-    - SMTP 'blocked' (port 25 firewalled) = neutral — don't penalize for cloud hosting
-    - SMTP 'reject' (explicit 550) = strong negative
-    - SMTP 'greylist' = slightly positive (server responded)
-    - SMTP 'accept' = strong positive
-    - SMTP 'unknown' (catch-all) = slight negative
-    - Role address = minor note only, not a score penalty
+    Scoring rules:
+    - No syntax / disposable → immediately invalid (score 0-5)
+    - MX not found + domain not found → probably invalid (-70)
+    - MX not found but domain exists → slight penalty (-20)
+    - SMTP blocked → NEUTRAL, not a sign of invalidity
+    - SMTP accept → confirmed valid (no penalty)
+    - SMTP reject → strong negative (-70)
+    - SMTP greylist → tiny negative (-3), server responded
+    - SMTP catch-all → moderate uncertainty (-18)
+    - Role address → tiny note (-3), still deliverable
     """
-    if not syntax:
+    if not syntax_ok:
         return 0, "invalid", "Invalid syntax"
-
     if disposable:
-        return 5, "invalid", "Disposable email domain"
+        return 5, "invalid", "Disposable domain"
 
     score = 100
-    reasons = []
-    is_known_provider = domain in MAJOR_PROVIDERS
+    reasons: List[str] = []
+    mx_ok = len(mx_records) > 0
+    is_known = domain in SMTP_BLOCKED_PROVIDERS
 
-    # --- MX / DNS ---
+    # Domain / MX
     if not mx_ok:
-        if a_record:
-            # Domain exists, uses implicit MX (rare but valid)
-            score -= 15
-            reasons.append("No MX (A record exists)")
-        else:
-            # Domain doesn't resolve at all
-            score -= 55
+        if not domain_found:
+            score -= 70
             reasons.append("Domain not found")
-
-    # --- SMTP interpretation ---
-    if mx_ok:
-        if smtp_result == 'accept':
-            # Confirmed delivery — best outcome
-            pass  # no deduction, score stays 100
-        elif smtp_result == 'reject':
-            # Server explicitly said this user doesn't exist
-            score -= 65
-            reasons.append("Mailbox rejected by server")
-        elif smtp_result == 'blocked':
-            # Port 25 blocked — common on cloud / shared hosting environments
-            # Cannot determine, do NOT penalize heavily
-            if is_known_provider:
-                # Major providers always block; format is well-known, trust MX
-                pass
-            else:
-                score -= 10
-                reasons.append("SMTP unverifiable (port blocked)")
-        elif smtp_result == 'greylist':
-            # Temporary reject — server is alive, probably valid
-            score -= 5
-            reasons.append("Greylisted (temp)")
-        elif smtp_result == 'unknown':
-            # Catch-all server — cannot confirm individual mailbox
+        else:
             score -= 20
-            reasons.append("Catch-all server (unverifiable)")
-        elif smtp_result == 'error':
-            # Technical failure — treat same as blocked
-            score -= 10
-            reasons.append("SMTP check failed")
+            reasons.append("No MX record")
 
-    # --- Role address — purely informational, minor deduction ---
+    # SMTP
+    if mx_ok:
+        if smtp_result == "accept":
+            pass  # confirmed
+        elif smtp_result == "reject":
+            score -= 70
+            reasons.append("Mailbox rejected by server")
+        elif smtp_result == "blocked":
+            # Port 25 firewalled — extremely common, means nothing about validity
+            if not is_known:
+                score -= 8
+                reasons.append("SMTP unverifiable (port blocked)")
+            # known providers: zero penalty
+        elif smtp_result == "greylist":
+            score -= 3
+            reasons.append("Greylisted (temporary)")
+        elif smtp_result == "unknown":
+            score -= 18
+            reasons.append("Catch-all server")
+        elif smtp_result == "error":
+            score -= 8
+            reasons.append("SMTP error")
+
     if role:
-        score -= 5
+        score -= 3
         reasons.append("Role-based address")
 
     score = max(0, score)
 
-    # --- Status thresholds ---
     if score >= 80:
         status = "valid"
-    elif score >= 55:
+    elif score >= 60:
         status = "probably_valid"
-    elif score >= 35:
+    elif score >= 40:
         status = "risky"
     else:
         status = "invalid"
@@ -406,57 +310,68 @@ def calc_score(
     return score, status, reason
 
 
+# -----------------------------------------------------------------------------
+# VERIFY LOOP
+# -----------------------------------------------------------------------------
+
 def verify_emails(emails: List[str]) -> pd.DataFrame:
     results = []
-    last_time: dict = {}
-    progress = st.progress(0)
-    status_text = st.empty()
+    last_req: dict = {}
+    valid_list = [e.strip() for e in emails if e.strip() and "@" in e]
 
-    valid_emails = [e.strip() for e in emails if e.strip() and '@' in e.strip()]
+    bar = st.progress(0)
+    msg = st.empty()
+    total = len(valid_list)
 
-    for i, email in enumerate(valid_emails):
+    for i, email in enumerate(valid_list):
         email = email.lower().strip()
-        local, domain = email.split('@', 1)
+        local, _, domain = email.partition("@")
 
-        # Rate-limit per domain (1 req/s) to avoid bans
-        if domain in last_time and time.time() - last_time[domain] < 1.0:
-            time.sleep(1.0 - (time.time() - last_time[domain]))
-        last_time[domain] = time.time()
+        # Per-domain rate limiting
+        now = time.time()
+        gap = now - last_req.get(domain, 0)
+        if gap < 1.0:
+            time.sleep(1.0 - gap)
+        last_req[domain] = time.time()
 
-        syntax = validate_syntax(email) or validate_syntax_simple(email)
-        disposable = check_disposable(domain)
-        role = check_role(local)
-        mx = get_mx(domain)
-        mx_ok = len(mx) > 0
-        a_rec = has_a_record(domain) if not mx_ok else False
+        msg.text(f"Checking {email}...")
 
-        smtp_result = 'blocked'
-        smtp_detail = 'Skipped'
+        syntax_ok = validate_syntax(email)
+        is_disposable = domain in DISPOSABLE_DOMAINS
+        is_role = local in ROLE_PREFIXES
 
-        if syntax and not disposable:
-            if mx_ok:
-                smtp_result, smtp_detail = smtp_check(email, mx)
+        mx_records: List[str] = []
+        domain_found = False
+
+        if syntax_ok and not is_disposable:
+            mx_records = get_mx_doh(domain)
+            if mx_records:
+                domain_found = True
             else:
-                smtp_result = 'blocked'
-                smtp_detail = 'No MX'
+                domain_found = domain_exists_doh(domain)
 
-        score, status_val, reason = calc_score(
-            email, syntax, disposable, role, mx_ok, a_rec, smtp_result, domain
+        smtp_result, smtp_detail = "blocked", "Skipped"
+        if syntax_ok and mx_records and not is_disposable:
+            smtp_result, smtp_detail = smtp_check(email, mx_records)
+
+        score, status, reason = calc_score(
+            syntax_ok, is_disposable, is_role,
+            mx_records, domain_found, smtp_result, domain
         )
 
         results.append({
             "Email": email,
-            "Status": status_val,
+            "Status": status,
             "Score": score,
             "Reason": reason,
-            "Details": f"MX:{len(mx)} | SMTP:{smtp_detail}",
+            "MX": len(mx_records),
+            "SMTP": smtp_detail,
         })
 
-        progress.progress((i + 1) / len(valid_emails))
-        status_text.text(f"Checking {email}...")
+        bar.progress((i + 1) / total)
 
-    progress.empty()
-    status_text.empty()
+    bar.empty()
+    msg.empty()
     return pd.DataFrame(results)
 
 
@@ -464,87 +379,99 @@ def verify_emails(emails: List[str]) -> pd.DataFrame:
 # UI
 # -----------------------------------------------------------------------------
 
+def show_summary(df: pd.DataFrame):
+    total     = len(df)
+    valid     = len(df[df["Status"] == "valid"])
+    uncertain = len(df[df["Status"].isin(["probably_valid", "risky"])])
+    invalid   = len(df[df["Status"] == "invalid"])
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.markdown(f'<div class="metric-box"><div class="metric-num">{total}</div><div class="metric-label">Total</div></div>', unsafe_allow_html=True)
+    c2.markdown(f'<div class="metric-box" style="border-color:#16a34a"><div class="metric-num" style="color:#16a34a">{valid}</div><div class="metric-label">Valid</div></div>', unsafe_allow_html=True)
+    c3.markdown(f'<div class="metric-box" style="border-color:#d97706"><div class="metric-num" style="color:#d97706">{uncertain}</div><div class="metric-label">Uncertain</div></div>', unsafe_allow_html=True)
+    c4.markdown(f'<div class="metric-box" style="border-color:#dc2626"><div class="metric-num" style="color:#dc2626">{invalid}</div><div class="metric-label">Invalid</div></div>', unsafe_allow_html=True)
+
+    st.divider()
+
+    st.dataframe(df, use_container_width=True, hide_index=True,
+                 column_config={
+                     "Status": st.column_config.TextColumn(width="small"),
+                     "Score":  st.column_config.NumberColumn(width="small"),
+                     "MX":     st.column_config.NumberColumn(width="small"),
+                     "Reason": st.column_config.TextColumn(width="medium"),
+                     "SMTP":   st.column_config.TextColumn(width="small"),
+                 })
+
+    st.download_button("Download CSV",
+                       data=df.to_csv(index=False).encode("utf-8"),
+                       file_name="results.csv", mime="text/csv")
+
+
 def main():
     st.markdown("<h1>Email Verifier</h1>", unsafe_allow_html=True)
     st.markdown('<p class="subtitle">Validate emails with syntax, domain, and SMTP checks.</p>', unsafe_allow_html=True)
 
-    tab_batch, tab_manual, tab_single = st.tabs(["Batch", "Manual", "Single"])
-
-    if 'df' not in st.session_state:
+    if "df" not in st.session_state:
         st.session_state.df = None
 
+    tab_single, tab_manual, tab_batch = st.tabs(["Single", "Manual", "Batch"])
+
+    with tab_single:
+        single = st.text_input("", placeholder="name@company.com", label_visibility="collapsed")
+        if st.button("Verify", key="btn_single"):
+            if single.strip():
+                result = verify_emails([single.strip()])
+                st.session_state.df = result
+                if not result.empty:
+                    row = result.iloc[0]
+                    sc = row["Status"]
+                    st.markdown(f"""
+                    <div class="result-card {sc}">
+                        <div class="result-email">{row['Email']}</div>
+                        <div style="display:flex;gap:1rem;align-items:center;margin-bottom:1rem;">
+                            <span class="badge badge-{sc}">{sc.replace('_',' ').title()}</span>
+                            <span class="result-text">Score: <strong>{row['Score']}</strong>/100</span>
+                        </div>
+                        <div>
+                            <span class="result-label">Reason:</span>
+                            <span class="result-text">&nbsp;{row['Reason']}</span><br>
+                            <span class="result-label">MX records:</span>
+                            <span class="result-text">&nbsp;{row['MX']}</span><br>
+                            <span class="result-label">SMTP:</span>
+                            <span class="result-text">&nbsp;{row['SMTP']}</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+    with tab_manual:
+        st.write("Paste emails (one per line):")
+        text = st.text_area("", height=180,
+                            placeholder="user@example.com\nanother@test.org",
+                            label_visibility="collapsed")
+        if st.button("Verify", key="btn_manual"):
+            if text.strip():
+                emails = [l.strip() for l in text.split("\n") if l.strip()]
+                if emails:
+                    st.session_state.df = verify_emails(emails)
+
     with tab_batch:
-        file = st.file_uploader("Upload CSV (column: 'email')", type=['csv'], label_visibility="collapsed")
+        file = st.file_uploader("Upload CSV with an 'email' column",
+                                type=["csv"], label_visibility="collapsed")
         if file:
             try:
-                df = pd.read_csv(file)
-                if 'email' not in df.columns:
-                    st.error("CSV must have 'email' column")
+                df_in = pd.read_csv(file)
+                if "email" not in df_in.columns:
+                    st.error("CSV must have an 'email' column.")
                 else:
-                    emails = df['email'].dropna().astype(str).tolist()
+                    emails = df_in["email"].dropna().astype(str).tolist()
+                    st.info(f"{len(emails)} emails loaded.")
                     if st.button("Verify", key="btn_batch"):
                         st.session_state.df = verify_emails(emails)
             except Exception as e:
                 st.error(f"Error: {e}")
 
-    with tab_manual:
-        st.write("Paste emails (one per line):")
-        text = st.text_area("", height=180, placeholder="user@example.com\nanother@test.org", label_visibility="collapsed")
-        if st.button("Verify", key="btn_manual"):
-            if text:
-                emails = [l.strip() for l in text.split('\n') if l.strip()]
-                if emails:
-                    st.session_state.df = verify_emails(emails)
-                else:
-                    st.warning("Enter at least one email")
-
-    with tab_single:
-        single = st.text_input("Email", placeholder="name@company.com", label_visibility="collapsed")
-        if st.button("Verify", key="btn_single"):
-            if single:
-                result = verify_emails([single])
-                st.session_state.df = result
-                if not result.empty:
-                    row = result.iloc[0]
-                    status_class = row['Status']
-                    st.markdown(f"""
-                    <div class="result-card {status_class}">
-                        <div class="result-email">{row['Email']}</div>
-                        <div style="display:flex;gap:1rem;align-items:center;margin-bottom:1rem;">
-                            <span class="badge badge-{status_class}">{status_class.replace('_',' ').title()}</span>
-                            <span class="result-text">Score: <strong>{row['Score']}</strong>/100</span>
-                        </div>
-                        <div style="font-size:1rem;">
-                            <span class="result-label">Reason:</span> <span class="result-text">{row['Reason']}</span><br>
-                            <span class="result-label">Details:</span> <span class="result-text">{row['Details']}</span>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-    if st.session_state.df is not None:
-        df = st.session_state.df
-        total = len(df)
-        valid = len(df[df['Status'] == 'valid'])
-        uncertain = len(df[df['Status'].isin(['risky', 'probably_valid'])])
-        invalid = len(df[df['Status'] == 'invalid'])
-
-        c1, c2, c3, c4 = st.columns(4)
-        c1.markdown(f'<div class="metric-box"><div class="metric-num">{total}</div><div class="metric-label">Total</div></div>', unsafe_allow_html=True)
-        c2.markdown(f'<div class="metric-box" style="border-color:#16a34a;"><div class="metric-num" style="color:#16a34a">{valid}</div><div class="metric-label">Valid</div></div>', unsafe_allow_html=True)
-        c3.markdown(f'<div class="metric-box" style="border-color:#d97706;"><div class="metric-num" style="color:#d97706">{uncertain}</div><div class="metric-label">Uncertain</div></div>', unsafe_allow_html=True)
-        c4.markdown(f'<div class="metric-box" style="border-color:#dc2626;"><div class="metric-num" style="color:#dc2626">{invalid}</div><div class="metric-label">Invalid</div></div>', unsafe_allow_html=True)
-
-        st.divider()
-
-        st.dataframe(df, use_container_width=True, hide_index=True, column_config={
-            "Status": st.column_config.TextColumn(width="small"),
-            "Score": st.column_config.NumberColumn(),
-            "Reason": st.column_config.TextColumn(width="medium"),
-            "Details": st.column_config.TextColumn(width="small"),
-        })
-
-        csv = df.to_csv(index=False).encode('utf-8')
-        st.download_button("Download CSV", data=csv, file_name='results.csv', mime='text/csv')
+    if st.session_state.df is not None and not st.session_state.df.empty:
+        show_summary(st.session_state.df)
 
 
 if __name__ == "__main__":
