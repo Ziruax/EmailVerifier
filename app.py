@@ -289,7 +289,7 @@ def main():
         
         st.dataframe(df, use_container_width=True, hide_index=True, column_config={
             "Status": st.column_config.TextColumn(width="small"),
-            "Score": st.column_config.NumberColumn(min=0, max=100),
+            "Score": st.column_config.NumberColumn(),
             "Reason": st.column_config.TextColumn(width="medium"),
             "Details": st.column_config.TextColumn(width="small")
         })
