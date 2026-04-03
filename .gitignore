@@ -1,50 +1,24 @@
 ```
-# Compiled and binary files
-*.pyc
+# Python
 __pycache__/
-
-# Dependencies
-.venv/
-venv/
-pip-log.txt
-pipenv.lock
+*.pyc
+*.pyo
+*.pyd
 
 # Logs and temp files
 *.log
 *.tmp
-*.swp
-*.swo
 
-# Environment variables
+# Environment
 .env
 .env.local
-.env.*
+*.env.*
 
 # Editors
 .vscode/
 .idea/
-*.swp
-*.swo
 
-# System files
-.DS_Store
-Thumbs.db
-
-# Coverage reports
-.coverage
-coverage/
-htmlcov/
-
-# Python specific
-*.pyc
-__pycache__/
-.pytest_cache/
-.mypy_cache/
-*.pyo
-*.pyd
-
-# Build artifacts
-dist/
-build/
-*.egg-info/
+# Dependencies
+.venv/
+venv/
 ```
