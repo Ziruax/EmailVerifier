@@ -21,44 +21,62 @@ st.set_page_config(
 # Minimalist CSS
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
     
     * { font-family: 'Inter', sans-serif; }
     
-    .block-container { padding-top: 3rem; max-width: 800px; }
+    .block-container { padding-top: 2rem; max-width: 900px; }
     
-    h1 { font-size: 1.75rem; font-weight: 600; color: #000000; margin-bottom: 0.5rem; }
-    .subtitle { color: #4a4a4a; font-size: 0.95rem; margin-bottom: 2rem; }
+    h1 { font-size: 2rem; font-weight: 700; color: #1a1a1a; margin-bottom: 0.5rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
+    .subtitle { color: #333333; font-size: 1rem; margin-bottom: 2rem; font-weight: 500; }
     
-    .stTabs [data-baseweb="tab-list"] { border-bottom: 1px solid #d0d0d0; gap: 1.5rem; }
-    .stTabs [data-baseweb="tab"] { color: #5a5a5a; font-weight: 500; }
-    .stTabs [aria-selected="true"] { color: #000000; border-bottom: 2px solid #000000; }
+    .stTabs [data-baseweb="tab-list"] { border-bottom: 2px solid #333333; gap: 1rem; }
+    .stTabs [data-baseweb="tab"] { color: #333333; font-weight: 600; font-size: 1rem; padding: 0.75rem 1.5rem; }
+    .stTabs [aria-selected="true"] { color: #ffffff; background: #2563eb; border-bottom: none; border-radius: 8px 8px 0 0; }
     
     .stTextInput input, .stTextArea textarea { 
-        background: #ffffff; border: 1px solid #cccccc; border-radius: 6px; 
-        color: #000000;
+        background: #ffffff; border: 2px solid #333333; border-radius: 8px; 
+        color: #000000; font-size: 1rem; font-weight: 500;
     }
+    .stTextInput input:focus, .stTextArea textarea:focus { border-color: #2563eb; outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,0.2); }
     
     .stButton button {
-        background: #000000; color: #ffffff; border: none; border-radius: 6px;
-        padding: 0.5rem 1.25rem; font-weight: 500;
+        background: #2563eb; color: #ffffff; border: none; border-radius: 8px;
+        padding: 0.75rem 2rem; font-weight: 600; font-size: 1rem;
+        box-shadow: 0 2px 4px rgba(37,99,235,0.3);
     }
-    .stButton button:hover { background: #333333; }
+    .stButton button:hover { background: #1d4ed8; box-shadow: 0 4px 8px rgba(37,99,235,0.4); }
     
     .metric-box {
-        background: #ffffff; padding: 1rem; border-radius: 8px;
-        text-align: center; border: 1px solid #d0d0d0;
+        background: #ffffff; padding: 1.25rem; border-radius: 12px;
+        text-align: center; border: 3px solid #333333; box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
     }
-    .metric-num { font-size: 1.5rem; font-weight: 600; color: #000000; }
-    .metric-label { font-size: 0.75rem; color: #5a5a5a; text-transform: uppercase; letter-spacing: 0.5px; }
+    .metric-num { font-size: 2rem; font-weight: 700; color: #1a1a1a; }
+    .metric-label { font-size: 0.85rem; color: #333333; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-top: 0.5rem; }
     
-    .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.8rem; font-weight: 500; }
-    .badge-valid { background: #2e7d32; color: #ffffff; }
-    .badge-probably { background: #1565c0; color: #ffffff; }
-    .badge-risky { background: #f9a825; color: #000000; }
-    .badge-invalid { background: #c62828; color: #ffffff; }
+    .badge { display: inline-block; padding: 0.5rem 1rem; border-radius: 99px; font-size: 0.9rem; font-weight: 700; border: 2px solid #000000; }
+    .badge-valid { background: #22c55e; color: #ffffff; }
+    .badge-probably_valid { background: #3b82f6; color: #ffffff; }
+    .badge-probably { background: #3b82f6; color: #ffffff; }
+    .badge-risky { background: #f59e0b; color: #000000; }
+    .badge-invalid { background: #ef4444; color: #ffffff; }
+    
+    .result-card {
+        background: #ffffff; padding: 1.5rem; border-radius: 12px;
+        border: 3px solid #333333; box-shadow: 4px 4px 0px rgba(0,0,0,0.15);
+    }
+    .result-card.valid { background: #dcfce7; border-color: #16a34a; }
+    .result-card.probably_valid { background: #dbeafe; border-color: #2563eb; }
+    .result-card.risky { background: #fef3c7; border-color: #d97706; }
+    .result-card.invalid { background: #fee2e2; border-color: #dc2626; }
+    
+    .result-email { font-size: 1.4rem; font-weight: 700; color: #1a1a1a; margin-bottom: 0.75rem; }
+    .result-text { font-size: 1rem; color: #1a1a1a; font-weight: 600; }
+    .result-label { font-weight: 700; color: #1a1a1a; }
     
     #MainMenu, footer, header { visibility: hidden; }
+    
+    .stDataFrame { border: 2px solid #333333; border-radius: 8px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -233,18 +251,17 @@ def main():
                 st.session_state.df = result
                 if not result.empty:
                     row = result.iloc[0]
-                    colors = {"valid": "#e6f4ea", "probably_valid": "#e8f0fe", "risky": "#fef7e0", "invalid": "#fce8e6"}
-                    bg = colors.get(row['Status'], "#f0f0f0")
+                    status_class = row['Status']
                     st.markdown(f"""
-                    <div style="background:{bg};padding:1.5rem;border-radius:8px;border:1px solid #ccc;margin-top:1rem;">
-                        <div style="font-size:1.2rem;font-weight:600;margin-bottom:0.5rem;color:#000000">{row['Email']}</div>
-                        <div style="display:flex;gap:1rem;align-items:center">
-                            <span class="badge badge-{row['Status']}">{row['Status'].replace('_',' ').title()}</span>
-                            <span style="color:#333333;font-size:0.9rem">Score: <strong>{row['Score']}</strong>/100</span>
+                    <div class="result-card {status_class}">
+                        <div class="result-email">{row['Email']}</div>
+                        <div style="display:flex;gap:1rem;align-items:center;margin-bottom:1rem;">
+                            <span class="badge badge-{status_class}">{status_class.replace('_',' ').title()}</span>
+                            <span class="result-text">Score: <strong>{row['Score']}</strong>/100</span>
                         </div>
-                        <div style="margin-top:1rem;font-size:0.9rem;color:#333333">
-                            <strong>Reason:</strong> {row['Reason']}<br>
-                            <strong>Details:</strong> {row['Details']}
+                        <div style="font-size:1rem;">
+                            <span class="result-label">Reason:</span> <span class="result-text">{row['Reason']}</span><br>
+                            <span class="result-label">Details:</span> <span class="result-text">{row['Details']}</span>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
@@ -258,9 +275,9 @@ def main():
         
         c1, c2, c3, c4 = st.columns(4)
         c1.markdown(f'<div class="metric-box"><div class="metric-num">{total}</div><div class="metric-label">Total</div></div>', unsafe_allow_html=True)
-        c2.markdown(f'<div class="metric-box"><div class="metric-num" style="color:#1e7e34">{valid}</div><div class="metric-label">Valid</div></div>', unsafe_allow_html=True)
-        c3.markdown(f'<div class="metric-box"><div class="metric-num" style="color:#b98900">{uncertain}</div><div class="metric-label">Uncertain</div></div>', unsafe_allow_html=True)
-        c4.markdown(f'<div class="metric-box"><div class="metric-num" style="color:#c5221f">{invalid}</div><div class="metric-label">Invalid</div></div>', unsafe_allow_html=True)
+        c2.markdown(f'<div class="metric-box" style="border-color:#16a34a;"><div class="metric-num" style="color:#16a34a">{valid}</div><div class="metric-label">Valid</div></div>', unsafe_allow_html=True)
+        c3.markdown(f'<div class="metric-box" style="border-color:#d97706;"><div class="metric-num" style="color:#d97706">{uncertain}</div><div class="metric-label">Uncertain</div></div>', unsafe_allow_html=True)
+        c4.markdown(f'<div class="metric-box" style="border-color:#dc2626;"><div class="metric-num" style="color:#dc2626">{invalid}</div><div class="metric-label">Invalid</div></div>', unsafe_allow_html=True)
         
         st.divider()
         
